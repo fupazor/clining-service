@@ -1,0 +1,1033 @@
+package com.company;
+import org.mysql.cj.x.protobuf.MysqlxDatatypes;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.sql.*;
+import java.util.*;
+
+
+
+public class Main  {
+
+
+    public Main() {
+        LogInScreen();
+
+        }
+
+
+    private JFrame LogInScreenF;
+    private JFrame UserScreenF;
+    private JFrame DirectorScreenF;
+    private JFrame SotrScreenF;
+    private JFrame ManagerScreenF;
+    private JFrame Sotr_tableF;
+
+        private void LogInScreen(){
+            //создание самой фрмы
+            LogInScreenF=new JFrame("Log In");
+           // LogInScreen.setLocation(1200,500);
+            LogInScreenF.setSize(150,150);
+            LogInScreenF.setLocationRelativeTo(null);
+            LogInScreenF.setVisible(true);
+            LogInScreenF.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE );
+
+            //поле логин
+            JTextField login=new JTextField(20);
+            login.setToolTipText("login");
+            login.setLocation(12,12);
+            login.setVisible(true);
+            login.setSize(100,25);
+
+            //поле пароль
+            JPasswordField password = new JPasswordField(20);
+            password.setToolTipText("password");
+            password.setLocation(12,50);
+            password.setVisible(true);
+            password.setSize(100,25);
+
+
+            //Создание кнопки
+
+            JButton button = new JButton("LogIn");
+            button.setVisible(true);
+            button.setLocation(12,80);
+            button.setSize(100,20);
+            button.addActionListener(new ActionListener() {
+                //действие при нажатии на кнопку
+                public void actionPerformed(ActionEvent e) {
+                    try{
+                        DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+                        Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
+                        Connection con;
+                        Statement stmt;
+                        ResultSet rs;
+                        con = DriverManager.getConnection("jdbc:mysql://localhost:3306/a_07_18?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "root");
+                        stmt = con.createStatement();
+                        String pas=new String(password.getPassword());
+                        rs = stmt.executeQuery("call login(\""+login.getText()+"\",\""+pas+"\");");
+                        rs.next();
+                        String name = rs.getString(1);
+                        int id =rs.getInt(2);
+
+
+                            switch (name.charAt(0)) {
+                                case 'D':LogInScreenF.setVisible(false);LogInScreenF.dispose();DirectorScreen();
+                                    break;
+                                case 'U':
+                                    LogInScreenF.setVisible(false);LogInScreenF.dispose();UserScreen(id);
+                                    break;
+                                case 'M':LogInScreenF.setVisible(false);LogInScreenF.dispose();ManagerScreen();
+                                    break;
+                                case 'S':LogInScreenF.setVisible(false);LogInScreenF.dispose();SotrScreen(id);
+                                    break;
+                                case 'E':JOptionPane.showMessageDialog(LogInScreenF, "Incorrect login or passwor",
+                                        "Warning", JOptionPane.WARNING_MESSAGE);
+                                    break;
+                            }
+                    } catch(Exception ex){
+                        ex.printStackTrace();
+                    }
+
+                }
+            });
+            LogInScreenF.getContentPane().add(login);
+            LogInScreenF.getContentPane().add(password);
+            LogInScreenF.getContentPane().add(button);
+            LogInScreenF.getContentPane().add(new JLabel());
+        }
+
+
+        public void user_table_refresh(int page,DefaultTableModel tableModel,int id)
+        {
+            int i=tableModel.getRowCount();
+           for(int j=i-1;j>=0;j--){
+            tableModel.removeRow(j);}
+            try {
+                DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+                Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
+                Connection con;
+                Statement stmt;
+                ResultSet rs;
+                con = DriverManager.getConnection("jdbc:mysql://localhost:3306/a_07_18?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "root");
+                stmt = con.createStatement();
+                rs = stmt.executeQuery("call user_table("+id+");");
+                i=1;
+
+                while(rs.next() && i<=10*page){
+                    if (i>(page-1)*10){
+                        Vector v=new Vector(5,1);
+                        v.addElement(rs.getInt(1));
+                        v.addElement(rs.getInt(2));
+                        v.addElement(rs.getString(3));
+                        v.addElement(rs.getString(4));
+                        v.addElement(rs.getInt(5));
+                        tableModel.addRow(v);}
+                    i++;
+
+                    // button.setVisible(false);
+                }
+
+            }catch(Exception ex){
+                ex.printStackTrace();
+            }
+        }
+        int page=1;
+        int page_max=0;
+    private void UserScreen(int id)
+{
+    try {
+        DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+        Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
+        Connection con;
+        Statement stmt;
+        ResultSet rs;
+        con = DriverManager.getConnection("jdbc:mysql://localhost:3306/a_07_18?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "root");
+        stmt = con.createStatement();
+
+        rs = stmt.executeQuery("call user_rows("+id+");");
+        rs.next();
+
+        page_max=Integer.parseInt(rs.getString(1));
+
+    }catch(Exception ex){
+        ex.printStackTrace();
+    }
+    UserScreenF=new JFrame("Личный кабинет");
+    UserScreenF.setSize(600,350);
+    UserScreenF.setLocationRelativeTo(null);
+    UserScreenF.setVisible(true);
+    UserScreenF.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE );
+    DefaultTableModel tableModel= new DefaultTableModel(){
+        @Override
+        public boolean isCellEditable(int i, int i1) {
+
+            return false;
+        }
+    };
+    tableModel.addColumn("id");
+    tableModel.addColumn("date");
+    tableModel.addColumn("addres");
+    tableModel.addColumn("done");
+    tableModel.addColumn("mark");
+    JTable Order=new JTable(tableModel);
+    Order.setRowHeight(15);
+    Order.setVisible(true);
+
+
+    user_table_refresh(page,tableModel,id);
+
+
+    JButton left_page = new JButton("prev page");
+    left_page.setSize(100,20);
+    left_page.setLocation(5,170);
+    left_page.setVisible(true);
+    left_page.setEnabled(false);
+    left_page.addActionListener(new ActionListener() {
+        //действие при нажатии на кнопку
+        public void actionPerformed(ActionEvent e) {
+            page--;
+            left_page.setEnabled(false);
+            user_table_refresh(page,tableModel,id);
+        }});
+
+
+    JButton right_page = new JButton("next page");
+    right_page.setSize(100,20);
+    right_page.setLocation(480,170);
+    right_page.setVisible(true);
+    right_page.setEnabled(true);
+    if (page_max<=page){right_page.setEnabled(false);}
+
+    right_page.addActionListener(new ActionListener() {
+        //действие при нажатии на кнопку
+        public void actionPerformed(ActionEvent e) {
+            page++;
+            if (page_max<=page){right_page.setEnabled(false);}
+            if (page>=1){left_page.setEnabled(true);}
+            user_table_refresh(page,tableModel,id);
+
+        }});
+    //UserScreenF.getContentPane().add(new JScrollPane(Order));
+    JButton sel = new JButton("Сonfrim completion");
+    sel.setSize(165,20);
+    sel.setLocation(103,170);
+    sel.setVisible(true);
+    sel.addActionListener(new ActionListener() {
+        //действие при нажатии на кнопку
+        public void actionPerformed(ActionEvent e) {
+            int i=Order.getSelectedRow();
+            Object cell=Order.getValueAt(i,0);
+            int id_cell =(int) cell;
+            try {
+                DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+                Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
+                Connection con;
+                Statement stmt;
+                ResultSet rs;
+                con = DriverManager.getConnection("jdbc:mysql://localhost:3306/a_07_18?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "root");
+                stmt = con.createStatement();
+                rs = stmt.executeQuery("call user_done("+id_cell+");");
+                user_table_refresh(page,tableModel,id);
+            }catch(Exception ex){
+                ex.printStackTrace();
+            }
+        }});
+    JButton refresh = new JButton("refresh");
+    refresh.setSize(100,20);
+    refresh.setLocation(380,170);
+    refresh.setVisible(true);
+    refresh.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+            user_table_refresh(page,tableModel,id);
+        }});
+
+    JTextField adres=new JTextField(20);
+    adres.setToolTipText("adres");
+    adres.setLocation(12,230);
+    adres.setVisible(true);
+    adres.setSize(100,25);
+
+    JTextField data=new JTextField(20);
+    data.setToolTipText("data");
+    data.setLocation(12,255);
+    data.setVisible(true);
+    data.setSize(100,25);
+
+
+
+    JButton new_ord = new JButton("new order");
+    new_ord.setSize(100,20);
+    new_ord.setLocation(110,240);
+    new_ord.setVisible(true);
+    new_ord.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+
+            try {
+                DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+                Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
+                Connection con;
+                Statement stmt;
+                ResultSet rs;
+                con = DriverManager.getConnection("jdbc:mysql://localhost:3306/a_07_18?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "root");
+                stmt = con.createStatement();
+                rs = stmt.executeQuery("call user_new_ord("+id+","+data.getText()+",\""+adres.getText()+"\");");
+                user_table_refresh(page,tableModel,id);
+            }catch(Exception ex){
+                ex.printStackTrace();
+            }
+        }});
+    JButton cancel = new JButton("cancel order");
+    cancel.setSize(120,20);
+    cancel.setLocation(260,170);
+    cancel.setVisible(true);
+    cancel.addActionListener(new ActionListener() {
+        //действие при нажатии на кнопку
+        public void actionPerformed(ActionEvent e) {
+            int i=Order.getSelectedRow();
+            Object cell=Order.getValueAt(i,0);
+            int id_cell =(int) cell;
+            try {
+                DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+                Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
+                Connection con;
+                Statement stmt;
+                ResultSet rs;
+                con = DriverManager.getConnection("jdbc:mysql://localhost:3306/a_07_18?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "root");
+                stmt = con.createStatement();
+                rs = stmt.executeQuery("call user_del("+id_cell+");");
+                user_table_refresh(page,tableModel,id);
+            }catch(Exception ex){
+                ex.printStackTrace();
+            }
+        }});
+    UserScreenF.getContentPane().add(cancel);
+    UserScreenF.getContentPane().add(adres);
+    UserScreenF.getContentPane().add(data);
+    UserScreenF.getContentPane().add(new_ord);
+    UserScreenF.getContentPane().add(refresh);
+    UserScreenF.getContentPane().add(sel);
+    UserScreenF.getContentPane().add(left_page);
+    UserScreenF.getContentPane().add(right_page);
+    UserScreenF.getContentPane().add(new JScrollPane(Order));
+}
+
+
+    public void Man_table_refresh(int page,DefaultTableModel tableModel)
+    {
+        int i=tableModel.getRowCount();
+        for(int j=i-1;j>=0;j--){
+            tableModel.removeRow(j);}
+        try {
+            DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+            Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
+            Connection con;
+            Statement stmt;
+            ResultSet rs;
+            con = DriverManager.getConnection("jdbc:mysql://localhost:3306/a_07_18?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "root");
+            stmt = con.createStatement();
+            rs = stmt.executeQuery("call man_ord_table();");
+            i=1;
+
+            while(rs.next() && i<=10*page){
+                if (i>(page-1)*10){
+                    Vector v=new Vector(10,1);
+                    v.addElement(rs.getInt(1));
+                    v.addElement(rs.getString(2));
+                    v.addElement(rs.getInt(3));
+                    v.addElement(rs.getInt(4));
+                    v.addElement(rs.getString(5));
+                    v.addElement(rs.getString(6));
+                    v.addElement(rs.getInt(7));
+                    tableModel.addRow(v);}
+                i++;
+
+                // button.setVisible(false);
+            }
+
+        }catch(Exception ex){
+            ex.printStackTrace();
+        }
+    }
+
+    public void Man_Sotr_table_refresh(int page,DefaultTableModel tableModel)
+    {
+        int i=tableModel.getRowCount();
+        for(int j=i-1;j>=0;j--){
+            tableModel.removeRow(j);}
+        try {
+            DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+            Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
+            Connection con;
+            Statement stmt;
+            ResultSet rs;
+            con = DriverManager.getConnection("jdbc:mysql://localhost:3306/a_07_18?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "root");
+            stmt = con.createStatement();
+            rs = stmt.executeQuery("call man_sotr_table();");
+            i=1;
+
+            while(rs.next() && i<=10*page){
+                if (i>(page-1)*10){
+                    Vector v=new Vector(5,1);
+                    v.addElement(rs.getInt(1));
+                    v.addElement(rs.getString(2));
+                    v.addElement(rs.getString(3));
+                    v.addElement(rs.getInt(4));
+                    tableModel.addRow(v);}
+                i++;
+
+                // button.setVisible(false);
+            }
+
+        }catch(Exception ex){
+            ex.printStackTrace();
+        }
+    }
+
+
+    public void Sotr_table_show()
+    {
+        Sotr_tableF=new JFrame("Список работников");
+        Sotr_tableF.setSize(600,250);
+        Sotr_tableF.setLocation(0,0);
+        Sotr_tableF.setVisible(true);
+        Sotr_tableF.setDefaultCloseOperation(Sotr_tableF.DISPOSE_ON_CLOSE );
+        DefaultTableModel tableModel= new DefaultTableModel(){
+            @Override
+            public boolean isCellEditable(int i, int i1) {
+
+                return false;
+            }
+        };
+        tableModel.addColumn("id");
+        tableModel.addColumn("fio");
+        tableModel.addColumn("email");
+        tableModel.addColumn("number");
+        JTable Order=new JTable(tableModel);
+        Order.setRowHeight(15);
+        Order.setVisible(true);
+
+        Man_Sotr_table_refresh(page,tableModel);
+
+        JButton left_page = new JButton("prev page");
+        left_page.setSize(100,20);
+        left_page.setLocation(5,170);
+        left_page.setVisible(true);
+        left_page.setEnabled(false);
+        left_page.addActionListener(new ActionListener() {
+            //действие при нажатии на кнопку
+            public void actionPerformed(ActionEvent e) {
+                page--;
+                left_page.setEnabled(false);
+                Man_Sotr_table_refresh(page,tableModel);
+            }});
+
+
+        JButton right_page = new JButton("next page");
+        right_page.setSize(100,20);
+        right_page.setLocation(480,170);
+        right_page.setVisible(true);
+        right_page.setEnabled(true);
+        if (page_max<=page){right_page.setEnabled(false);}
+
+        right_page.addActionListener(new ActionListener() {
+            //действие при нажатии на кнопку
+            public void actionPerformed(ActionEvent e) {
+                page++;
+                if (page_max<=page){right_page.setEnabled(false);}
+                if (page>=1){left_page.setEnabled(true);}
+                Man_Sotr_table_refresh(page,tableModel);
+
+            }});
+        JButton refresh = new JButton("refresh");
+        refresh.setSize(100,20);
+        refresh.setLocation(380,170);
+        refresh.setVisible(true);
+        refresh.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                Man_Sotr_table_refresh(page,tableModel);
+            }});
+
+        //Sotr_tableF.getContentPane().add(Sotr_table);
+        Sotr_tableF.getContentPane().add(left_page);
+        Sotr_tableF.getContentPane().add(right_page);
+        Sotr_tableF.getContentPane().add(refresh);
+        Sotr_tableF.getContentPane().add(new JScrollPane(Order));
+
+
+
+
+    }
+
+    public void ManagerScreen()
+    {
+        try {
+            DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+            Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
+            Connection con;
+            Statement stmt;
+            ResultSet rs;
+            con = DriverManager.getConnection("jdbc:mysql://localhost:3306/a_07_18?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "root");
+            stmt = con.createStatement();
+
+            rs = stmt.executeQuery("call Man_rows();");
+            rs.next();
+
+            page_max=Integer.parseInt(rs.getString(1));
+
+        }catch(Exception ex){
+            ex.printStackTrace();
+        }
+        ManagerScreenF=new JFrame("Личный кабинет");
+        ManagerScreenF.setSize(600,300);
+        ManagerScreenF.setLocationRelativeTo(null);
+        ManagerScreenF.setVisible(true);
+        ManagerScreenF.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE );
+        DefaultTableModel tableModel= new DefaultTableModel(){
+            @Override
+            public boolean isCellEditable(int i, int i1) {
+if (i1==0 || i1==1 || i1==6){return false;}
+                return true;
+            }
+        };
+        tableModel.addColumn("id");
+        tableModel.addColumn("fio_client");
+        tableModel.addColumn("id_sotr");
+        tableModel.addColumn("data");
+        tableModel.addColumn("adres");
+        tableModel.addColumn("done");
+        tableModel.addColumn("mark");
+        JTable Order=new JTable(tableModel);
+        Order.setRowHeight(15);
+        Order.setVisible(true);
+
+        Man_table_refresh(page,tableModel);
+        JButton left_page = new JButton("prev page");
+        left_page.setSize(100,20);
+        left_page.setLocation(5,170);
+        left_page.setVisible(true);
+        left_page.setEnabled(false);
+        left_page.addActionListener(new ActionListener() {
+            //действие при нажатии на кнопку
+            public void actionPerformed(ActionEvent e) {
+                page--;
+                left_page.setEnabled(false);
+                Man_table_refresh(page,tableModel);
+            }});
+
+
+        JButton right_page = new JButton("next page");
+        right_page.setSize(100,20);
+        right_page.setLocation(480,170);
+        right_page.setVisible(true);
+        right_page.setEnabled(true);
+        if (page_max<=page){right_page.setEnabled(false);}
+
+        right_page.addActionListener(new ActionListener() {
+            //действие при нажатии на кнопку
+            public void actionPerformed(ActionEvent e) {
+                page++;
+                if (page_max<=page){right_page.setEnabled(false);}
+                if (page>=1){left_page.setEnabled(true);}
+                Man_table_refresh(page,tableModel);
+
+            }});
+        JButton refresh = new JButton("refresh");
+        refresh.setSize(100,20);
+        refresh.setLocation(380,170);
+        refresh.setVisible(true);
+        refresh.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                Man_table_refresh(page,tableModel);
+            }});
+
+        JButton Sotr_table = new JButton("Sotr table");
+        Sotr_table.setSize(200,40);
+        Sotr_table.setLocation(10,200);
+        Sotr_table.setVisible(true);
+        Sotr_table.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                Sotr_table_show();
+                try {
+                    DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+                    Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
+                    Connection con;
+                    Statement stmt;
+                    ResultSet rs;
+                    con = DriverManager.getConnection("jdbc:mysql://localhost:3306/a_07_18?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "root");
+                    stmt = con.createStatement();
+
+                    rs = stmt.executeQuery("call Man_Sotr_rows();");
+                    rs.next();
+
+                    page_max=Integer.parseInt(rs.getString(1));
+
+                }catch(Exception ex){
+                    ex.printStackTrace();
+                }
+            }});
+
+        JButton del = new JButton("delete order");
+        del.setSize(140,20);
+        del.setLocation(100,170);
+        del.setVisible(true);
+        del.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                int i=Order.getSelectedRow();
+                Object cell=Order.getValueAt(i,0);
+                int id_cell =(int) cell;
+                try {
+                    DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+                    Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
+                    Connection con;
+                    Statement stmt;
+                    ResultSet rs;
+                    con = DriverManager.getConnection("jdbc:mysql://localhost:3306/a_07_18?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "root");
+                    stmt = con.createStatement();
+                    rs = stmt.executeQuery("call man_ord_del("+id_cell+");");
+                }catch(Exception ex){
+                    ex.printStackTrace();
+                }
+                Man_table_refresh(page,tableModel);
+            }});
+
+        JButton change = new JButton("change order");
+        change.setSize(140,20);
+        change.setLocation(240,170);
+        change.setVisible(true);
+        change.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                int i=Order.getSelectedRow();
+                String str;
+                Object obj=Order.getValueAt(i,0);
+                int id_cell =(int) obj;
+                obj=Order.getValueAt(i,2);
+                String id_sotr;
+                try{
+                id_sotr =(String) obj;}
+                catch(Exception er){ id_sotr=String.valueOf((int)obj);}
+                obj=Order.getValueAt(i,3);
+                String data =(String) obj;
+                try{
+                    data =(String) obj;}
+                catch(Exception er){ data=String.valueOf((int)obj);}
+                obj=Order.getValueAt(i,4);
+                String adres =(String) obj;
+                obj=Order.getValueAt(i,5);
+                str= (String) obj;
+                char done =str.charAt(0);
+                System.out.print("1");
+                try {
+                    DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+                    Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
+                    Connection con;
+                    Statement stmt;
+                    ResultSet rs;
+                    con = DriverManager.getConnection("jdbc:mysql://localhost:3306/a_07_18?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "root");
+                    stmt = con.createStatement();
+                    rs = stmt.executeQuery("call man_ord_upd("+id_cell+','+id_sotr+','+data+",\""+adres+"\",\'"+done+"\');");
+                }catch(Exception ex){
+                    ex.printStackTrace();
+                }
+                Man_table_refresh(page,tableModel);
+            }});
+
+
+        ManagerScreenF.getContentPane().add(change);
+        ManagerScreenF.getContentPane().add(del);
+        ManagerScreenF.getContentPane().add(Sotr_table);
+        ManagerScreenF.getContentPane().add(left_page);
+        ManagerScreenF.getContentPane().add(right_page);
+        ManagerScreenF.getContentPane().add(refresh);
+        ManagerScreenF.getContentPane().add(new JScrollPane(Order));
+    }
+
+    public void Dir_Sotr_table_refresh(int page,DefaultTableModel tableModel)
+    {
+        int i=tableModel.getRowCount();
+        for(int j=i-1;j>=0;j--){
+            tableModel.removeRow(j);}
+        try {
+            DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+            Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
+            Connection con;
+            Statement stmt;
+            ResultSet rs;
+            con = DriverManager.getConnection("jdbc:mysql://localhost:3306/a_07_18?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "root");
+            stmt = con.createStatement();
+            rs = stmt.executeQuery("call dir_sotr_table();");
+            i=1;
+
+            while(rs.next() && i<=10*page){
+                if (i>(page-1)*10){
+                    Vector v=new Vector(10,1);
+                    v.addElement(rs.getInt(1));
+                    v.addElement(rs.getString(2));
+                    v.addElement(rs.getInt(3));
+                    v.addElement(rs.getInt(4));
+                    v.addElement(rs.getInt(5));
+                    v.addElement(rs.getInt(6));
+                    v.addElement(rs.getInt(7));
+                    v.addElement(rs.getInt(8));
+                    v.addElement(rs.getInt(9));
+                    v.addElement(rs.getString(10));
+                    tableModel.addRow(v);}
+                i++;
+
+                // button.setVisible(false);
+            }
+
+        }catch(Exception ex){
+            ex.printStackTrace();
+        }
+    }
+
+    public void DirectorScreen()
+    {
+        try {
+            DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+            Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
+            Connection con;
+            Statement stmt;
+            ResultSet rs;
+            con = DriverManager.getConnection("jdbc:mysql://localhost:3306/a_07_18?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "root");
+            stmt = con.createStatement();
+
+            rs = stmt.executeQuery("call man_sotr_rows();");
+            rs.next();
+
+            page_max=Integer.parseInt(rs.getString(1));
+
+        }catch(Exception ex){
+            ex.printStackTrace();
+        }
+        DirectorScreenF=new JFrame("Личный кабинет");
+        DirectorScreenF.setSize(750,250);
+        DirectorScreenF.setLocationRelativeTo(null);
+        DirectorScreenF.setVisible(true);
+        DirectorScreenF.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE );
+        DefaultTableModel tableModel= new DefaultTableModel(){
+            @Override
+            public boolean isCellEditable(int i, int i1) {
+                if (i1==0){
+                return false;}
+                return true;
+            }
+        };
+        tableModel.addColumn("id");
+        tableModel.addColumn("fio");
+        tableModel.addColumn("N dog");
+        tableModel.addColumn("N pasport");
+        tableModel.addColumn("number");
+        tableModel.addColumn("kod_graph");
+        tableModel.addColumn("N_card");
+        tableModel.addColumn("date_money");
+        tableModel.addColumn("Money");
+        tableModel.addColumn("number");
+        JTable Order=new JTable(tableModel);
+        Order.setRowHeight(15);
+        Order.setVisible(true);
+
+        Dir_Sotr_table_refresh(page,tableModel);
+
+
+        JButton left_page = new JButton("prev page");
+        left_page.setSize(100,20);
+        left_page.setLocation(5,170);
+        left_page.setVisible(true);
+        left_page.setEnabled(false);
+        left_page.addActionListener(new ActionListener() {
+            //действие при нажатии на кнопку
+            public void actionPerformed(ActionEvent e) {
+                page--;
+                left_page.setEnabled(false);
+                Dir_Sotr_table_refresh(page,tableModel);
+            }});
+
+
+        JButton right_page = new JButton("next page");
+        right_page.setSize(100,20);
+        right_page.setLocation(630,170);
+        right_page.setVisible(true);
+        right_page.setEnabled(true);
+        if (page_max<=page){right_page.setEnabled(false);}
+
+        right_page.addActionListener(new ActionListener() {
+            //действие при нажатии на кнопку
+            public void actionPerformed(ActionEvent e) {
+                page++;
+                if (page_max<=page){right_page.setEnabled(false);}
+                if (page>=1){left_page.setEnabled(true);}
+                Dir_Sotr_table_refresh(page,tableModel);
+
+            }});
+        JButton refresh = new JButton("refresh");
+        refresh.setSize(100,20);
+        refresh.setLocation(530,170);
+        refresh.setVisible(true);
+        refresh.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                Dir_Sotr_table_refresh(page,tableModel);
+            }});
+
+        JButton new_sotr = new JButton("new_sotr");
+        new_sotr.setSize(100,20);
+        new_sotr.setLocation(350,170);
+        new_sotr.setVisible(true);
+        new_sotr.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+                    Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
+                    Connection con;
+                    Statement stmt;
+                    ResultSet rs;
+                    con = DriverManager.getConnection("jdbc:mysql://localhost:3306/a_07_18?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "root");
+                    stmt = con.createStatement();
+
+                    rs = stmt.executeQuery("call sotr_max_id();");
+                    rs.next();
+
+                    int max_id=Integer.parseInt(rs.getString(1));
+                    Vector v=new Vector(10);
+                    v.addElement(max_id+1);
+                    for (int i=0;i<10;i++){v.addElement(0);}
+                    tableModel.addRow(v);
+                }catch(Exception ex){
+                    ex.printStackTrace();
+                }
+
+            }});
+        JButton confirm_changes= new JButton("confirm");
+        confirm_changes.setSize(100,20);
+        confirm_changes.setLocation(200,170);
+        confirm_changes.setVisible(true);
+        confirm_changes.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+
+                int i=Order.getSelectedRow();
+                String str;
+
+                Object obj=Order.getValueAt(i,0);
+                String id_cell;
+                try{
+                    id_cell =(String) obj;}
+                catch(Exception er){ id_cell=String.valueOf((int)obj);}
+
+                obj=Order.getValueAt(i,1);
+                String fio;
+                try{
+                    fio =(String) obj;}
+                catch(Exception er){ fio=String.valueOf((int)obj);}
+
+                obj=Order.getValueAt(i,2);
+                String N_dog;
+                try{
+                    N_dog =(String) obj;}
+                catch(Exception er){ N_dog=String.valueOf((int)obj);}
+
+                obj=Order.getValueAt(i,3);
+                String N_pas;
+                try{
+                    N_pas=(String) obj;}
+                catch(Exception er){ N_pas=String.valueOf((int)obj);}
+
+                obj=Order.getValueAt(i,4);
+                String number;
+                try{
+                    number=(String) obj;}
+                catch(Exception er){ number=String.valueOf((int)obj);}
+
+
+                obj=Order.getValueAt(i,5);
+                String kod_gr;
+                try{
+                    kod_gr=(String) obj;}
+                catch(Exception er){kod_gr =String.valueOf((int)obj);}
+
+                obj=Order.getValueAt(i,6);
+                String N_card;
+                try{
+                    N_card=(String) obj;}
+                catch(Exception er){ N_card=String.valueOf((int)obj);}
+
+                obj=Order.getValueAt(i,7);
+                String date_m;
+                try{
+                    date_m=(String) obj;}
+                catch(Exception er){date_m=String.valueOf((int)obj);}
+
+                obj=Order.getValueAt(i,8);
+                String money;
+                try{
+                    money=(String) obj;}
+                catch(Exception er){ money=String.valueOf((int)obj);}
+
+                obj=Order.getValueAt(i,9);
+                String email;
+                try{
+                    email =(String) obj;}
+                catch(Exception er){ email=String.valueOf((int)obj);}
+
+                try {
+                    DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+                    Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
+                    Connection con;
+                    Statement stmt;
+                    ResultSet rs;
+                    con = DriverManager.getConnection("jdbc:mysql://localhost:3306/a_07_18?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "root");
+                    stmt = con.createStatement();
+                    rs = stmt.executeQuery("call dir_sotr_add("+id_cell+",\""+fio+"\","+N_dog+','+N_pas+','+number+','+kod_gr+','+N_card+','+date_m+','+money+",\""+email+"\");");
+                }catch(Exception ex){
+                    ex.printStackTrace();
+                }
+                Dir_Sotr_table_refresh(page,tableModel);
+            }});
+
+
+        DirectorScreenF.getContentPane().add(confirm_changes);
+        DirectorScreenF.getContentPane().add(new_sotr);
+        DirectorScreenF.getContentPane().add(left_page);
+        DirectorScreenF.getContentPane().add(right_page);
+        DirectorScreenF.getContentPane().add(refresh);
+        DirectorScreenF.getContentPane().add(new JScrollPane(Order));
+    }
+
+
+    public void sotr_table_refresh(int page,DefaultTableModel tableModel,int id)
+    {
+        int i=tableModel.getRowCount();
+        for(int j=i-1;j>=0;j--){
+            tableModel.removeRow(j);}
+        try {
+            DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+            Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
+            Connection con;
+            Statement stmt;
+            ResultSet rs;
+            con = DriverManager.getConnection("jdbc:mysql://localhost:3306/a_07_18?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "root");
+            stmt = con.createStatement();
+            rs = stmt.executeQuery("call sotr_table("+id+");");
+            i=1;
+
+            while(rs.next() && i<=10*page){
+                if (i>(page-1)*10){
+                    Vector v=new Vector(5,1);
+                    v.addElement(rs.getInt(1));
+                    v.addElement(rs.getInt(2));
+                    v.addElement(rs.getString(3));
+                    v.addElement(rs.getString(4));
+                    v.addElement(rs.getInt(5));
+                    tableModel.addRow(v);}
+                i++;
+
+                // button.setVisible(false);
+            }
+
+        }catch(Exception ex){
+            ex.printStackTrace();
+        }
+    }
+
+    public void SotrScreen(int id)
+{
+    try {
+        DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+        Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
+        Connection con;
+        Statement stmt;
+        ResultSet rs;
+        con = DriverManager.getConnection("jdbc:mysql://localhost:3306/a_07_18?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "root");
+        stmt = con.createStatement();
+
+        rs = stmt.executeQuery("call sotr_rows("+id+");");
+        rs.next();
+
+        page_max=Integer.parseInt(rs.getString(1));
+
+    }catch(Exception ex){
+        ex.printStackTrace();
+    }
+    SotrScreenF=new JFrame("Личный кабинет");
+    SotrScreenF.setSize(600,250);
+    SotrScreenF.setLocationRelativeTo(null);
+    SotrScreenF.setVisible(true);
+    SotrScreenF.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE );
+    DefaultTableModel tableModel= new DefaultTableModel(){
+        @Override
+        public boolean isCellEditable(int i, int i1) {
+
+            return false;
+        }
+    };
+    tableModel.addColumn("id");
+    tableModel.addColumn("date");
+    tableModel.addColumn("addres");
+    tableModel.addColumn("fio client");
+    tableModel.addColumn("client number");
+    JTable Order=new JTable(tableModel);
+    Order.setRowHeight(15);
+    Order.setVisible(true);
+
+    sotr_table_refresh(page,tableModel,id);
+
+
+    JButton left_page = new JButton("prev page");
+    left_page.setSize(100,20);
+    left_page.setLocation(5,170);
+    left_page.setVisible(true);
+    left_page.setEnabled(false);
+    left_page.addActionListener(new ActionListener() {
+        //действие при нажатии на кнопку
+        public void actionPerformed(ActionEvent e) {
+            page--;
+            left_page.setEnabled(false);
+            sotr_table_refresh(page,tableModel,id);
+        }});
+
+
+    JButton right_page = new JButton("next page");
+    right_page.setSize(100,20);
+    right_page.setLocation(480,170);
+    right_page.setVisible(true);
+    right_page.setEnabled(true);
+    if (page_max<=page){right_page.setEnabled(false);}
+
+    right_page.addActionListener(new ActionListener() {
+        //действие при нажатии на кнопку
+        public void actionPerformed(ActionEvent e) {
+            page++;
+            if (page_max<=page){right_page.setEnabled(false);}
+            if (page>=1){left_page.setEnabled(true);}
+            sotr_table_refresh(page,tableModel,id);
+
+        }});
+    JButton refresh = new JButton("refresh");
+    refresh.setSize(100,20);
+    refresh.setLocation(380,170);
+    refresh.setVisible(true);
+    refresh.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+            sotr_table_refresh(page,tableModel,id);
+        }});
+    SotrScreenF.getContentPane().add(left_page);
+    SotrScreenF.getContentPane().add(right_page);
+    SotrScreenF.getContentPane().add(refresh);
+    SotrScreenF.getContentPane().add(new JScrollPane(Order));
+}
+
+
+    public void actionPerformed(ActionEvent action) { }
+//запускает обычный мейн
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                new Main();
+            }
+        });
+    }
+
+    }
